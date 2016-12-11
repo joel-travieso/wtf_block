@@ -1,4 +1,6 @@
 # wtf_block
+This is intended to be just a *code sample*. Do not try to find logic behind the actual 
+functionality. Feel free to download and test.
 
 ### SUMMARY
 Allows to temporarily override blocks' region settings, placing all site blocks 
