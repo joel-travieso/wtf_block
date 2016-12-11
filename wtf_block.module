@@ -34,17 +34,17 @@ function wtf_block_permission() {
  * Implements hook_block_list_alter().
  */
 function wtf_block_block_list_alter(&$blocks) {
-  global $theme;
+  global $theme_key;
   //Load configuration
   $current_config = variable_get('wtf_block_region');
   //Check if we have block transference enabled for this theme
-  if (!empty($current_config['container_' . $theme]['region'])) {
+  if (!empty($current_config['container_' . $theme_key]['region'])) {
     //Iterate over the blocks that are about to be rendered
     foreach ($blocks as $block) {
       //Skip the main content block or any other specified in the whitelist
-      if ($block->delta != 'main' && empty($current_config['container_' . $theme]['whitelist']['blocks'][$block->bid])) {
+      if ($block->delta != 'main' && empty($current_config['container_' . $theme_key]['whitelist']['blocks'][$block->bid])) {
         //Change region
-        $block->region = $current_config['container_' . $theme]['region'];
+        $block->region = $current_config['container_' . $theme_key]['region'];
       }
     }
   }
