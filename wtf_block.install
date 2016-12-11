@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function wtf_block_uninstall() {
+  //Remove created variables
+  variable_del('wtf_block_region');
+  variable_del('wtf_block_whitelist');
+}
