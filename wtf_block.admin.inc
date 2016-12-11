@@ -35,7 +35,7 @@ function wtf_block_config_form($form, &$form_state) {
       '#type' => 'select',
       '#title' => t('Region'),
 	    '#description' => t('The region where all blocks will go.'), 
-      '#options' => array_merge(array('0' => 'No region'), system_region_list($theme_key)) ,
+      '#options' => array_merge(array('0' => 'No region'), system_region_list($theme_key, REGIONS_VISIBLE)) ,
       '#default_value' => isset($current_config['container_' . $theme_key]['region']) ? $current_config['container_' . $theme_key]['region'] : 0,
     );
 
@@ -52,6 +52,9 @@ function wtf_block_config_form($form, &$form_state) {
 	    '#collapsible' => TRUE, 
 	    '#collapsed' => TRUE,
 	    '#weight' => 2,
+      '#states' => array(
+        'invisible' => array('select[name="container[container_' . $theme_key . '][region]"]' => array('value' => 0)),
+      ),
 	  );
 	  //Block checkboxes
 	  $form['container']['container_' . $theme_key]['whitelist']['blocks'] = array(
