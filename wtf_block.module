@@ -39,7 +39,6 @@ function wtf_block_config_form($form, &$form_state) {
   $default_theme = variable_get('theme_default');
   $admin_theme = variable_get('admin_theme');
   $current_config = variable_get('wtf_block_region');
-  $current_config_blocks = variable_get('wtf_block_whitelist', array());
   //Create a container to wrap all the region inputs, so we have a submit value ready to be sent to db without processing
   $form['container'] = array(
     '#type' => 'container',
@@ -49,39 +48,48 @@ function wtf_block_config_form($form, &$form_state) {
   foreach (list_themes() as $theme_key => $theme_info) {
     $is_default = $theme_key == $default_theme;
     $is_admin = $theme_key == $admin_theme;
-    $form['container']['region_' . $theme_key] = array(
-      '#type' => 'select',
+    $form['container']['container_' . $theme_key] = array(
+      '#type' => 'fieldset', 
       '#title' => $theme_info->info['name'] . ($is_default ? ' (Default)' : ($is_admin ? ' (Administrative)' : '')),
-      '#options' => array_merge(array('0' => 'No region'), system_region_list($theme_key)) ,
-      '#default_value' => isset($current_config['region_' . $theme_key]) ? $current_config['region_' . $theme_key] : 0,
+      '#weight' => 5, 
+      '#collapsible' => TRUE, 
+      '#collapsed' => !$is_admin && !$is_default,
       '#weight' => $is_default ? -1 : (int)!$is_admin,
     );
-  }
+    $form['container']['container_' . $theme_key]['region'] = array(
+      '#type' => 'select',
+      '#title' => t('Region'),
+	    '#description' => t('The region where all blocks will go.'), 
+      '#options' => array_merge(array('0' => 'No region'), system_region_list($theme_key)) ,
+      '#default_value' => isset($current_config['container_' . $theme_key]['region']) ? $current_config['container_' . $theme_key]['region'] : 0,
+    );
 
-  //Get all existent blocks
-  //TODO: Make this a configuration per theme too. 
-  $blocks = block_admin_display_prepare_blocks($default_theme);
-  foreach ($blocks as $block) {
-    $blocks_info[$block['bid']] = $block['info'];
+	  //Get all existent blocks
+	  $blocks = block_admin_display_prepare_blocks($theme_key);
+	  $blocks_info = array();
+	  foreach ($blocks as $block) {
+	    $blocks_info[$block['bid']] = $block['info'];
+	  }
+	  $form['container']['container_' . $theme_key]['whitelist'] = array(
+	    '#type' => 'fieldset', 
+	    '#title' => t('Whitelist'), 
+	    '#description' => t('Blocks that can bypass the WTF configuration.'), 
+	    '#collapsible' => TRUE, 
+	    '#collapsed' => TRUE,
+	    '#weight' => 2,
+	  );
+	  //Block checkboxes
+	  $form['container']['container_' . $theme_key]['whitelist']['blocks'] = array(
+	    '#type' => 'checkboxes',
+	    '#title' => t('Choose:'),
+	    '#options' => $blocks_info,
+	    '#default_value' => $current_config['container_' . $theme_key]['whitelist']['blocks'],
+	  );
   }
-  $form['whitelist'] = array(
-    '#type' => 'fieldset', 
-    '#title' => t('Whitelist (BETA)'), 
-    '#description' => t('Blocks that can bypass the WTF configuration. Currently only works for the current theme (Wait to see the next version!!). If you change themes you will have to come here again, although configuration for previously disabled themes is available once they are enabled again.'), 
-    '#collapsible' => TRUE, 
-    '#collapsed' => TRUE,
-  );
-  //Block checkboxes
-  $form['whitelist']['blocks'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Choose:'),
-    '#options' => $blocks_info,
-    '#default_value' => $current_config_blocks,
-  );
-
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
+    '#weight' => 3,
   );
   return $form;
 }
@@ -92,7 +100,6 @@ function wtf_block_config_form($form, &$form_state) {
 function wtf_block_config_form_submit($form, &$form_state) {
   //We don't need to do anything extra thanks to the way the form fields are built, just store
   variable_set('wtf_block_region', $form_state['values']['container']);
-  variable_set('wtf_block_whitelist', $form_state['values']['blocks']);
 }
 
 /**
@@ -102,15 +109,14 @@ function wtf_block_block_list_alter(&$blocks) {
   global $theme;
   //Load configuration
   $current_config = variable_get('wtf_block_region');
-  $current_config_blocks = variable_get('wtf_block_whitelist');
   //Check if we have block transference enabled for this theme
-  if (!empty($current_config['region_' . $theme])) {
+  if (!empty($current_config['container_' . $theme]['region'])) {
     //Iterate over the blocks that are about to be rendered
     foreach ($blocks as $block) {
       //Skip the main content block or any other specified in the whitelist
-      if ($block->delta != 'main' && empty($current_config_blocks[$block->bid])) {
+      if ($block->delta != 'main' && empty($current_config['container_' . $theme]['whitelist']['blocks'][$block->bid])) {
         //Change region
-        $block->region = $current_config['region_' . $theme];
+        $block->region = $current_config['container_' . $theme]['region'];
       }
     }
   }
